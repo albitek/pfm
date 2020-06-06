@@ -1,10 +1,35 @@
-# Quickstart for plaid-python
+# Modified Quickstart for plaid-python
 
-To run this application locally, first install it and then run either of the flows described below. Additionally, please also refer to the [Quickstart guide](https://plaid.com/docs/quickstart).
+## Overview
+This repo is my effort to build a personal finance management tool using the 
+development environment from the Plaid API. Rather than building my own client/server, 
+I forked and modified Plaid's quickstart repo which significantly reduced the technical
+scope of this project and allowed me to focus on the financial model. This repo's focus 
+is solely about retrieving transactions which can then be further analyzed via Excel.
+
+I have modified the python code for the forked plaid quickstart repo
+in the following ways:
+
+* Created an `fm` (financial manager) module for custom implementations.
+
+* Modified `server.py` to intercept the access_token request/response and store those credentials.
+
+* Modified `server.py` to require an additional CLI parameter - the filepath where 
+access tokens are stored.
+
+* Created a new entry-point file `transactions.py` which takes the tokens file as input
+and retrieves and processes all transactions for each access token (institution) in two different files
+in a specified target directory:
+
+    * raw json data file
+    * flattened csv data file
+
+---
+Note: the following are excerpts from the forked readme modified to fit the new requirements.
 
 ## Installing the quickstart app
 ``` bash
-git clone https://github.com/plaid/quickstart.git
+git clone https://github.com/albitek/quickstart.git
 cd quickstart/python
 
 # If you use virtualenv
@@ -14,52 +39,35 @@ cd quickstart/python
 pip install -r requirements.txt
 ```
 
-## The canonical flow
+## Running Plaid's Link widget locally
+For each institution (up to 5 allowed in development), boot up the app, follow
+the auth flow, and kill the process using CTRL-C. Repeat for each institution. The quickstart server code can only store one access token in memory but tokens will
+be appended to the specified `<token-filename>` during each run.
 ``` bash
-# Start the Quickstart with your API keys from the Dashboard
-# https://dashboard.plaid.com/account/keys
-#
-# PLAID_PRODUCTS is a comma-separated list of products to use when
-# initializing Link. Note that this list must contain 'assets' in
-# order for the app to be able to create and retrieve asset reports.
-
 PLAID_CLIENT_ID='CLIENT_ID' \
 PLAID_SECRET='SECRET' \
 PLAID_PUBLIC_KEY='PUBLIC_KEY' \
 PLAID_ENV='sandbox' \
 PLAID_PRODUCTS='transactions' \
 PLAID_COUNTRY_CODES='US,CA,GB,FR,ES' \
-python server.py
+python server.py <token-filename>
 
 # Go to http://localhost:5000
 ```
 
-## The OAuth redirect flow
-Some European institutions require an OAuth redirect authentication flow, where the end user is redirected to the bank’s website or mobile app to authenticate. For this flow, you should provide two additional configuration parameters, `PLAID_OAUTH_NONCE` and `PLAID_OAUTH_REDIRECT_URI`.
+## Fetch and store transactions
+After all access tokens are stored in the `<token-filename>` path, run the
+following script to pull and store all transactions in json, and csv within
+the `<target-directory>` path.
 
 ``` bash
-# You will need to whitelist the PLAID_OAUTH_REDIRECT_URI for
-# your client ID through the Plaid developer dashboard at
-# https://dashboard.plaid.com/team/api.
-#
-# Set PLAID_OAUTH_NONCE to a unique identifier such as a UUID.
-# The nonce must be at least 16 characters long.
-#
-# Start the Quickstart with your API keys from the Dashboard
-# https://dashboard.plaid.com/account/keys
-#
-# PLAID_PRODUCTS is a comma-separated list of products to use when
-# initializing Link.
-
 PLAID_CLIENT_ID='CLIENT_ID' \
 PLAID_SECRET='SECRET' \
 PLAID_PUBLIC_KEY='PUBLIC_KEY' \
 PLAID_ENV='sandbox' \
-PLAID_PRODUCTS='transactions' \
-PLAID_COUNTRY_CODES='GB' \
-PLAID_OAUTH_REDIRECT_URI='http://localhost:5000/oauth-response.html' \
-PLAID_OAUTH_NONCE='nice-and-long-nonce' \
-python server.py
-
-# Go to http://localhost:5000
+python transactions.py <token-filename> <target-directory>
 ```
+
+After confirming correct functionality in `sandbox` mode, then you can
+switch to `development` mode by using Plaid's dashboard to generate credentials
+for that environment.
